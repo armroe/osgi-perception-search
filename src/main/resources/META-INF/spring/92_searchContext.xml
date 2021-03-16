@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:context="http://www.springframework.org/schema/context" 
+	xmlns:util="http://www.springframework.org/schema/util" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans.xsd 
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context.xsd 
+		http://www.springframework.org/schema/util 
+		http://www.springframework.org/schema/util/spring-util.xsd">
+	<context:property-placeholder properties-ref="properties"/>
+	<context:annotation-config/>
+	<context:mbean-export/>
+
+	<bean class="net.yeeyaa.eight.core.processor.InjectProcessor" id="inject">
+		<property name="inject" ref="search"/>	
+	</bean>
+	
+	<bean class="net.yeeyaa.eight.core.processor.AccommodateProcessor" id="cache">
+		<property name="processor">
+			<bean class="net.yeeyaa.eight.core.processor.InjectProcessor$Get">
+				<constructor-arg ref="inject"/>	
+			</bean> 		
+		</property>
+	</bean>
+
+	<bean class="net.yeeyaa.perception.search.Search$Check" id="check">
+		<constructor-arg ref="search"/>	
+	</bean>
+
+	<bean class="net.yeeyaa.perception.search.Search$Meta" id="meta">
+		<constructor-arg ref="search"/>	
+	</bean>
+	
+	<bean class="net.yeeyaa.perception.search.Search$Execute" id="execute">
+		<constructor-arg ref="search"/>	
+	</bean>
+
+	<bean class="net.yeeyaa.perception.search.Search" id="search" depends-on="factory">
+		<constructor-arg ref="log"/>
+		<property name="checker" value="#{${framework.perception.search.checker.key:null}}"/>	
+		<property name="serverid" value="${framework.perception.search.serverid:#{null}}"/>
+		<property name="holder">
+			<bean class="net.yeeyaa.eight.core.processor.UniversalProxy">
+				<property name="invoker">
+					<bean class="net.yeeyaa.eight.osgi.runtime.ProxyBean$$Proxy">
+						<property name="invoker" ref="invoker"/>
+						<property name="name" value="${framework.perception.search.holder:holder}"/>
+					</bean> 		
+				</property>
+			</bean> 
+		</property>
+		<property name="driver">
+			<bean class="net.yeeyaa.perception.search.SearchDriver">
+				<constructor-arg ref="${framework.perception.search.classloader.key:classLoader}"/>
+				<constructor-arg value="false"/>
+			</bean> 
+		</property>		
+	</bean>
+	
+	<bean class="net.yeeyaa.eight.core.processor.ChainXProcessor" id="factoryHolder"> 
+		<constructor-arg ref="log"/>
+        <property name="sync" value="false"/>		
+		<property name="processors"> 
+   			<list>
+				<bean class="net.yeeyaa.eight.common.aop.SubClassProcessor">
+					<property name="superClass" value="net.yeeyaa.perception.search.SearchFactory"/>
+				</bean>   
+				<ref bean="classLoader"/> 			
+				<bean class="net.yeeyaa.eight.common.aop.ClassObjectProcessor"/>
+   			</list>
+ 		</property> 
+	</bean>	
+
+	<bean factory-bean="factoryHolder" factory-method="process" name="factory">
+		<constructor-arg value="search.factory.proxy"/>
+	</bean>
+	
+	<bean class="net.yeeyaa.eight.core.processor.UniversalProxy" id="checker">
+		<property name="invoker">
+			<bean class="net.yeeyaa.eight.osgi.runtime.ProxyBean$$Proxy">
+				<property name="invoker" ref="invoker"/>
+				<property name="name" value="${framework.perception.search.checker:checker}"/>
+			</bean> 		
+		</property>
+	</bean> 
+	
+	<bean class="net.yeeyaa.perception.search.SearchFactory$Proxy" id="proxy"> 
+		<property name="key" value="${framework.perception.search.proxy.key:#{null}}"/>		
+		<property name="holder" ref="callback"/> 
+	</bean>	
+	
+	<bean class="net.yeeyaa.eight.core.processor.CallbackProcessor" id="callback">
+	    <property name="processor" ref="beanHolder"/>
+	    <property name="paras" value="next"/>
+	</bean>
+
+	<bean factory-bean="callback" factory-method="getValue" id="nextname" scope="prototype"/>
+
+	<bean class="net.yeeyaa.eight.core.processor.UniversalProxy" id="next" scope="prototype">
+		<property name="invoker">
+			<bean class="net.yeeyaa.eight.osgi.runtime.ProxyBean">
+				<property name="invoker" ref="invoker"/>
+				<property name="name" ref="nextname"/>
+			</bean> 		
+		</property>
+	</bean>
+</beans>

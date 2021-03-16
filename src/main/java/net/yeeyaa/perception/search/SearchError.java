@@ -5,6 +5,8 @@ import net.yeeyaa.eight.PlatformException.Type;
 public enum SearchError implements Type {
 	ERROR_CONNECTION_FAIL,
 	QUERY_EXCEPTION,
+	NOT_LOGIN,
+	SCHEMA_ERROR,
 	METHOD_NOT_SUPPORT;
 	
 	@Override
