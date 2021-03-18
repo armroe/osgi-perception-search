@@ -36,7 +36,7 @@
 		<constructor-arg ref="search"/>	
 	</bean>
 
-	<bean class="net.yeeyaa.perception.search.Search" id="search" depends-on="factory">
+	<bean class="net.yeeyaa.perception.search.Search" id="search" depends-on="factory,driver">
 		<constructor-arg ref="log"/>
 		<property name="checker" value="#{${framework.perception.search.checker.key:null}}"/>	
 		<property name="serverid" value="${framework.perception.search.serverid:#{null}}"/>
@@ -51,11 +51,28 @@
 			</bean> 
 		</property>
 		<property name="driver">
-			<bean class="net.yeeyaa.perception.search.SearchDriver">
-				<constructor-arg ref="${framework.perception.search.classloader.key:classLoader}"/>
-				<constructor-arg value="false"/>
+			<bean class="net.yeeyaa.perception.search.SearchDriver$$Proxy">
+				<property name="classloader" ref="${framework.perception.search.classloader.key:classLoader}"/>
 			</bean> 
 		</property>		
+	</bean>
+
+	<bean class="net.yeeyaa.eight.core.processor.ChainXProcessor" id="driverHolder"> 
+		<constructor-arg ref="log"/>
+        <property name="sync" value="false"/>		
+		<property name="processors"> 
+   			<list>
+				<bean class="net.yeeyaa.eight.common.aop.SubClassProcessor">
+					<property name="superClass" value="net.yeeyaa.perception.search.SearchDriver"/>
+				</bean>   
+				<ref bean="classLoader"/> 			
+				<bean class="net.yeeyaa.eight.common.aop.ClassObjectProcessor"/>
+   			</list>
+ 		</property> 
+	</bean>	
+
+	<bean factory-bean="driverHolder" factory-method="process" name="driver">
+		<constructor-arg value="net.yeeyaa.perception.search.SearchDriver$$Proxy"/>
 	</bean>
 	
 	<bean class="net.yeeyaa.eight.core.processor.ChainXProcessor" id="factoryHolder"> 
@@ -75,6 +92,15 @@
 	<bean factory-bean="factoryHolder" factory-method="process" name="factory">
 		<constructor-arg value="search.factory.proxy"/>
 	</bean>
+
+	<bean class="net.yeeyaa.eight.core.processor.UniversalProxy" id="loader">
+		<property name="invoker">
+			<bean class="net.yeeyaa.eight.osgi.runtime.ProxyBean$$Proxy">
+				<property name="invoker" ref="invoker"/>
+				<property name="name" value="${framework.perception.search.loader:loader}"/>
+			</bean> 		
+		</property>
+	</bean> 
 	
 	<bean class="net.yeeyaa.eight.core.processor.UniversalProxy" id="checker">
 		<property name="invoker">
